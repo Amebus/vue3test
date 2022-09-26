@@ -8,12 +8,13 @@ module.exports = {
     '@vue/typescript/recommended',
     'eslint:recommended',
     'plugin:vue/vue3-recommended',
-    'plugin:@typescript-eslint/eslint-recommended'
+    'plugin:@typescript-eslint/eslint-recommended',
+    "plugin:@typescript-eslint/recommended"
   ],
   overrides: [
     {
       files: [
-        'cypress/e2e/**.{cy,spec}.{js,ts,jsx,tsx}'
+        'cypress/e2e/**.{cy,spec}.{js,ts,tsx}'
       ],
       'extends': [
         'plugin:cypress/recommended'
@@ -23,15 +24,6 @@ module.exports = {
   parserOptions: {
     ecmaVersion: 'latest'
   },
-  ignorePatterns: [
-    'vue.config.js',
-		'**/tests/unit/*.ts',
-		'**/node_modules/**/*.*',
-		'**/src/**/*.json',
-		'**/src/**/*.svg',
-		'**/src/**/*.png',
-		'**/src/shims'
-  ],
   rules: {
     semi: 'off',
     '@typescript-eslint/consistent-indexed-object-style': 'error',
