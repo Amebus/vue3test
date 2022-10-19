@@ -9,7 +9,7 @@ interface ITappable<T> {
 	 * @param f function executed when the execution chain reaches the `tap`
 	 * @returns the instance whiche the `tap` is executed over
 	 */
-	tap(f: (value: T | null | undefined ) => void): this;
+	tap(f: (value: T | null | undefined ) => void): ITappable<T>;
 }
 interface IAsArray<T> {
 	[Symbol.iterator](): Generator<T, void, unknown>;
@@ -92,7 +92,7 @@ export interface IMaybe<T> extends ITappable<T>, IAsArray<T> {
 	 * Returns the `IMaybe<T>` instance to allow the `IMaybe<T>` methods chaining
 	 * @param f The function to be run to produce side effects
 	 */
-	then(f: (value: T) => void): this;
+	then(f: (value: T) => void): IMaybe<T>;
 	
 	/**
 	 * Gets the inner value of the curent `IMaybe` instance. Useful in those cases in which is not possible to keep the code into the elevated world
@@ -196,11 +196,11 @@ export class Just<T> implements IJust<T> {
 		return f(initial, this.value());
 	}
 
-	tap(f: (value: T | null | undefined) => void): this {
+	tap(f: (value: T | null | undefined) => void): IMaybe<T> {
 		f(this.value());
 		return this;
 	}
-	then(f: (value: T) => void): this {
+	then(f: (value: T) => void): IMaybe<T> {
 		f(this.value());
 		return this;
 	}
@@ -275,11 +275,11 @@ export class Nothing<T> implements INothing<T> {
 		return initial;
 	}
 
-	tap(f: (value: T | null | undefined) => void): this {
+	tap(f: (value: T | null | undefined) => void): IMaybe<T> {
 		f(this.value());
 		return this;
 	}
-	then(): this {
+	then(): IMaybe<T> {
 		return this;
 	}
 	toString(): string {
