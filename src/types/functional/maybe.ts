@@ -4,7 +4,7 @@ import {
 
 interface ITappable<T> {
 	/**
-	 * Helper function to execute side effects outside of the `Maybe` instance during the methods chaining.  
+	 * Helper function to execute side effects outside of the `ITappable<T>` instance during the methods chaining.  
 	 * Mainly used to debug or log
 	 * @param f function executed when the execution chain reaches the `tap`
 	 * @returns the instance whiche the `tap` is executed over
@@ -13,6 +13,9 @@ interface ITappable<T> {
 }
 interface IAsArray<T> {
 	[Symbol.iterator](): Generator<T, void, unknown>;
+	/**
+	 * Returns the Array representation of the current object
+	 */
 	asArray(): T[];
 }
 export type BooleanComparePredicate<T> = (current: T, other: T) => boolean;
@@ -35,18 +38,48 @@ export interface IMaybe<T> extends ITappable<T>, IAsArray<T> {
 	 */
 	extend<R>(f: (value: IMaybe<T>) => R): IMaybe<R>;
 	
+	/**
+	 * Filter the inner value of the `IMaybe<T>` instance depending on the result of the evaluation of the `predicate` function:
+	 * - If the inner value of the `IMaybe<T>` instance is `null` or `undefined` a `INothing<T>` is returned
+	 * - If the `predicate` function evaluate to `false` an empty `IMaybe<T>` is returned
+	 * - If the `predicate` function evaluate to `true` the `IMaybe<T>` instance is returned
+	 * @param predicate Functions that accept the inner value of the `IMaybe<T>` instance and returns `true` or `false` depending on the value of that value
+	 */
 	filter(predicate: (value: T) =>  boolean): IMaybe<T>;
 	
+	/**
+	 * Get the inner value of the `IMaybe<T>` instance if it's not `null` or `undefined` or the specified value otherwise
+	 * @param other The value, or the function to evaluate, that should be returned if the `IMaybe<T>` instance is empty
+	 */
 	getOrElse(other: T | (() => T)) : T;
 	
+	/**
+	 * Wether the `IMaybe<T>` instance has a value or not
+	 */
 	hasValue(): boolean;
 	
 	/**
 	 * Functor f => f a ~> (a -> b) -> f b
 	 */
 	map<R>(f: (value: T) => R ): IMaybe<R>;
+	/**
+	 * Executes and return a value of type `R` depending on the state of the `IMaybe<T>` instance.
+	 * - If the `IMaybe<T>` instance method `hasValue` returns `true` it returns the first parameter as
+	 *   - itself if it's a value
+	 *   - its evaluation if it is a function
+	 * - If the `IMaybe<T>` instance method `hasValue` returns `true` it returns the second parameter as
+	 *   - itself if it's a value
+	 *   - its evaluation if it is a function
+	 * @param nothing The `nothing` branch value or function to be evalueted
+	 * @param just The `just` branch value or function to be evalueted
+	 */
 	match<R>(nothing: R | (() => R), just: R | ((value: T) => R)): R;
 	
+	/**
+	 * Return the provided `IMaybe<T>` instance if the method `hasValue` of the current instance returns `false`.  
+	 * Usefull to keep the methods chaining
+	 * @param other the new `IMaybe<T>` instance to return
+	 */
 	orElse(other: IMaybe<T> | (() => IMaybe<T>)): IMaybe<T>;
 	
 	/**
@@ -54,6 +87,11 @@ export interface IMaybe<T> extends ITappable<T>, IAsArray<T> {
 	 */
 	reduce<R>(f: (acc: R, value: T) => R, initial: R): R;
 	
+	/**
+	 * Methods intended to execute side effetcs if the `IMaybe<T>` instance method `hasValue` returns `true`.  
+	 * Returns the `IMaybe<T>` instance to allow the `IMaybe<T>` methods chaining
+	 * @param f The function to be run to produce side effects
+	 */
 	then(f: (value: T) => void): this;
 	
 	/**
@@ -63,11 +101,11 @@ export interface IMaybe<T> extends ITappable<T>, IAsArray<T> {
 	value(): T | null | undefined;
 }
 
-interface IJust<T> extends IMaybe<T>,	ITappable<T>, IAsArray<T> {
+interface IJust<T> extends IMaybe<T> {
 	value(): T;
 }
 
-interface INothing<T> extends IMaybe<T>, ITappable<T>, IAsArray<T> {
+interface INothing<T> extends IMaybe<T> {
 	value(): null | undefined;
 }
 
