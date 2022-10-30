@@ -57,8 +57,7 @@ export function isNullOrUndefined(value?: any): value is null | undefined {
  * isFunction(/abc/)
  * // => false
  */
- // eslint-disable-next-line @typescript-eslint/ban-types
-export function isFunction(value?: any): value is Function {
+export function isFunction(value?: any): value is (...args: any[]) => any {
   return typeof value === 'function';
   // https://jsben.ch/B6h73
 	// return !!(object && object.constructor && object.call && object.apply);
