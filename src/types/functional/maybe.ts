@@ -1,27 +1,21 @@
 import {
-	isNullOrUndefined
+	isFunction,
+	isFunctionWithLength,
+	isNullOrUndefined, isString,
 } from './utils';
 
-interface ITappable<T> {
-	/**
-	 * Helper function to execute side effects outside of the `ITappable<T>` instance during the methods chaining.  
-	 * Mainly used to debug or log
-	 * @param f function executed when the execution chain reaches the `tap`
-	 * @returns the instance whiche the `tap` is executed over
-	 */
-	tap(f: (value: T | null | undefined ) => void): ITappable<T>;
-}
-interface IAsArray<T> {
+import type {
+	BooleanComparePredicate
+} from './utils';
+
+export interface IMaybe<T> {
+	
 	[Symbol.iterator](): Generator<T, void, unknown>;
 	/**
 	 * Returns the Array representation of the current object
 	 */
 	asArray(): T[];
-}
-export type BooleanComparePredicate<T> = (current: T, other: T) => boolean;
 
-export interface IMaybe<T> extends ITappable<T>, IAsArray<T> {
-	
 	/**
 	 * `Apply f => f a ~> f (a -> b) -> f b`
 	 * @param m
@@ -33,6 +27,16 @@ export interface IMaybe<T> extends ITappable<T>, IAsArray<T> {
 	 */
 	chain<R>(f: (value: T) => IMaybe<R>): IMaybe<R>;
 	
+	/**
+	 * 
+	 * Smigroup a => Maybe a ~> Maybe a -> Maybe a
+	 * 
+	 * @param other 
+	 */
+	concat(other: IMaybe<T>, howToConcat?:(tv: T, ov: T) => T): IMaybe<T>;
+
+	equals(other: IMaybe<T>, equalsPredicate?: BooleanComparePredicate<T> | null | undefined): boolean;
+
 	/**
 	 * `Extend w => w a ~> (w a -> b) -> w b`
 	 */
@@ -58,6 +62,15 @@ export interface IMaybe<T> extends ITappable<T>, IAsArray<T> {
 	 */
 	hasValue(): boolean;
 	
+	/**
+	 * 
+	 * Ord a => Maybe a ~> Maybe a -> Boolean
+	 * 
+	 * @param other 
+	 * @param lessThenPredicate 
+	 */
+	lessThen(other: IMaybe<T>, lessThenPredicate?: BooleanComparePredicate<T> | null | undefined): boolean;
+
 	/**
 	 * Functor f => f a ~> (a -> b) -> f b
 	 */
@@ -88,11 +101,20 @@ export interface IMaybe<T> extends ITappable<T>, IAsArray<T> {
 	reduce<R>(f: (acc: R, value: T) => R, initial: R): R;
 	
 	/**
+	 * Helper function to execute side effects outside of the `ITappable<T>` instance during the methods chaining.  
+	 * Mainly used to debug or log
+	 * @param f function executed when the execution chain reaches the `tap`
+	 * @returns the instance whiche the `tap` is executed over
+	 */
+	tap(f: (value: T | null | undefined ) => void): IMaybe<T>;
+	/**
 	 * Methods intended to execute side effetcs if the `IMaybe<T>` instance method `hasValue` returns `true`.  
 	 * Returns the `IMaybe<T>` instance to allow the `IMaybe<T>` methods chaining
 	 * @param f The function to be run to produce side effects
 	 */
 	then(f: (value: T) => void): IMaybe<T>;
+
+	toString(): string;
 	
 	/**
 	 * Gets the inner value of the curent `IMaybe` instance. Useful in those cases in which is not possible to keep the code into the elevated world
@@ -120,6 +142,32 @@ export function nothing<T>(value?: null | undefined): INothing<T> {
 }
 
 
+export function isMaybe<T = any>(value?: any): value is IMaybe<T> {
+	if (isNullOrUndefined(value))
+		return false;
+	if (isNullOrUndefined(value[Symbol.iterator]))
+		return false;
+	const v = value as IMaybe<T>;
+	return isFunctionWithLength(v.asArray, 0) &&
+		isFunctionWithLength(v.apply, 1) &&
+		isFunctionWithLength(v.chain, 1) &&
+		isFunctionWithLength(v.concat, 2) &&
+		isFunctionWithLength(v.equals, 2) &&
+		isFunctionWithLength(v.extend, 1) &&
+		isFunctionWithLength(v.filter, 1) &&
+		isFunctionWithLength(v.getOrElse, 1) &&
+		isFunctionWithLength(v.hasValue, 0) &&
+		isFunctionWithLength(v.lessThen, 2) &&
+		isFunctionWithLength(v.map, 1) &&
+		isFunctionWithLength(v.match, 2) &&
+		isFunctionWithLength(v.orElse, 1) &&
+		isFunctionWithLength(v.reduce, 2) &&
+		isFunctionWithLength(v.tap, 1) &&
+		isFunctionWithLength(v.then, 1) &&
+		isFunctionWithLength(v.toString, 0) &&
+		isFunctionWithLength(v.value, 0);
+}
+
 export class Just<T> implements IJust<T> {
 	
 	*[Symbol.iterator]() {
@@ -134,16 +182,30 @@ export class Just<T> implements IJust<T> {
 		this.internalValue = value;
 	}
 
-	asArray(): T[] {
-		return Array.from(this);
-	}
-
 	apply<R>(m: IMaybe<(value: T) => R>): IMaybe<R> {
 		return m.match(() => nothing(), f => maybe(f(this.value()))); 
 	}
 
+	asArray(): T[] {
+		return Array.from(this);
+	}
+
 	chain<R>(f: (value: T) => IMaybe<R>): IMaybe<R> {
 		return f(this.value());
+	}
+
+	concat(other: IMaybe<T>, howToConcat?:(tv: T, ov: T) => T): IMaybe<T> {
+		return this.map(tv => {
+			return other.match(tv, ov => {
+				if (isFunction(howToConcat))
+					return howToConcat(tv, ov);
+				if (isString(tv))
+					return `${tv}${ov}` as T;
+				if (Array.isArray(tv))
+					return tv.concat(ov) as T;
+				return ov;
+			});
+		});
 	}
 
 	equals(other: IMaybe<T>, equalsPredicate?: BooleanComparePredicate<T> | null | undefined): boolean {
@@ -161,7 +223,8 @@ export class Just<T> implements IJust<T> {
 		return predicate(this.value()) ? this : nothing();
 	}
 
-	getOrElse() : T {
+	// eslint-disable-next-line @typescript-eslint/no-unused-vars
+	getOrElse(other: T | (() => T)) : T {
 		return this.value();
 	}
 
@@ -169,11 +232,11 @@ export class Just<T> implements IJust<T> {
 		return true;
 	}
 
-	lessThenOrEqual(other: IMaybe<T>, lessThenOrEqualPredicate?: BooleanComparePredicate<T> | null | undefined): boolean {
+	lessThen(other: IMaybe<T>, lessThenPredicate?: BooleanComparePredicate<T> | null | undefined): boolean {
 		// if (other.hasValue())
 		// 	return maybe(lessThenOrEqualPredicate).getOrElse(() => (t: T, o: T) => t <= o)(this.value(), other.value()!);
 		// return false;
-		return other.match(false, ov => maybe(lessThenOrEqualPredicate).getOrElse(() => (t: T, o: T) => t <= o)(this.value(), ov));
+		return other.match(false, ov => maybe(lessThenPredicate).getOrElse(() => (t: T, o: T) => t <= o)(this.value(), ov));
 	}
 
 	map<R>(f: (value: T) => R | null | undefined ): IMaybe<R> {
@@ -183,12 +246,13 @@ export class Just<T> implements IJust<T> {
 	match<R>(_nothing: R | (() => R), just: R | ((value: T) => R)): R {
 		const v = this.value();
 		let j = just;
-		if (typeof j === 'function')
+		if (isFunction(j))
 			j = (j as (value: T) => R)(v) ;
 		return j;
 	}
 
-	orElse(): IMaybe<T> {
+	// eslint-disable-next-line @typescript-eslint/no-unused-vars
+	orElse(other: IMaybe<T> | (() => IMaybe<T>)): IMaybe<T> {
 		return this;
 	}
 
@@ -224,51 +288,68 @@ export class Nothing<T> implements INothing<T> {
 			throw Error('Nothing value must be equal to "null" or "undefined"');
 	}
 
+	// eslint-disable-next-line @typescript-eslint/no-unused-vars
+	apply<R>(m: IMaybe<(value: T) => R>): IMaybe<R> {
+		return nothing<R>();
+	}
+	
 	asArray(): T[] {
 		return Array.from(this);
 	}
 
-	apply<R>(): IMaybe<R> {
-		return nothing<R>();
-	}
-
-	chain<R>(): IMaybe<R> {
+	// eslint-disable-next-line @typescript-eslint/no-unused-vars
+	chain<R>(f: (value: T) => IMaybe<R>): IMaybe<R> {
 		return nothing();
 	}
 
-	equals(other: IMaybe<T>): boolean {
+	// eslint-disable-next-line @typescript-eslint/no-unused-vars
+	concat(other: IMaybe<T>, howToConcat?:(tv: T, ov: T) => T): IMaybe<T> {
+		return other;
+	}
+
+	// eslint-disable-next-line @typescript-eslint/no-unused-vars
+	equals(other: IMaybe<T>, equalsPredicate?: BooleanComparePredicate<T> | null | undefined): boolean {
 		return !other.hasValue();
 	}
 
-	extend<R>(): IMaybe<R> {
+	// eslint-disable-next-line @typescript-eslint/no-unused-vars
+	extend<R>(f: (value: IMaybe<T>) => R): IMaybe<R> {
 		return nothing();
 	}
 
-	filter(): IMaybe<T> {
+	// eslint-disable-next-line @typescript-eslint/no-unused-vars
+	filter(predicate: (value: T) =>  boolean): IMaybe<T> {
 		return nothing();
 	}
 
 	getOrElse(other: T | (() => T)) : T {
-		return this.match(other);
+		return this.match(other, other);
 	}
 
 	hasValue(): boolean {
 		return false;
 	}
 
-	map<R>(): IMaybe<R> {
+	// eslint-disable-next-line @typescript-eslint/no-unused-vars
+	lessThen(other: IMaybe<T>, lessThenPredicate?: BooleanComparePredicate<T> | null | undefined): boolean {
+		return true;
+	}
+
+	// eslint-disable-next-line @typescript-eslint/no-unused-vars
+	map<R>(f: (value: T) => R ): IMaybe<R> {
 		return nothing();
 	}
-	match<R>(nothing: R | (() => R)): R {
+	// eslint-disable-next-line @typescript-eslint/no-unused-vars
+	match<R>(nothing: R | (() => R), just: R | ((value: T) => R)): R {
 		let n = nothing;
-		if (typeof n === 'function')
+		if (isFunction(n))
 			n = (n as () => R)() ;
 		return n;
 	}
 
 	
 	orElse(other: IMaybe<T> | (() => IMaybe<T>)): IMaybe<T> {
-		return this.match(other);
+		return this.match(other, other);
 	}
 
 	reduce<R>(f: (acc: R, value: T) => R, initial: R): R {
@@ -279,7 +360,8 @@ export class Nothing<T> implements INothing<T> {
 		f(this.value());
 		return this;
 	}
-	then(): IMaybe<T> {
+	// eslint-disable-next-line @typescript-eslint/no-unused-vars
+	then(f: (value: T) => void): IMaybe<T> {
 		return this;
 	}
 	toString(): string {
