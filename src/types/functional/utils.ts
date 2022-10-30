@@ -60,6 +60,7 @@ export function isNullOrUndefined(value?: any): value is null | undefined {
  // eslint-disable-next-line @typescript-eslint/ban-types
 export function isFunction(value?: any): value is Function {
   return typeof value === 'function';
+  // https://jsben.ch/B6h73
 	// return !!(object && object.constructor && object.call && object.apply);
 }
 
