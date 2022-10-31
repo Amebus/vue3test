@@ -8,6 +8,8 @@ import type {
 	BooleanComparePredicate
 } from './utils';
 
+export type ApplyFunction<T,R> = ((v:T) => R | null | undefined);
+
 export interface IMaybe<T> {
 	
 	[Symbol.iterator](): Generator<T, void, unknown>;
@@ -20,7 +22,7 @@ export interface IMaybe<T> {
 	 * `Apply f => f a ~> f (a -> b) -> f b`
 	 * @param m
 	 */
-	apply<R>(m: IMaybe<(value: T) => R>): IMaybe<R>;
+	apply<R>(m: IMaybe<ApplyFunction<T,R>>): IMaybe<R>;
 
 	/**
 	 * `Chain m => m a ~> (a -> m b) -> m b`
@@ -123,22 +125,58 @@ export interface IMaybe<T> {
 	value(): T | null | undefined;
 }
 
-interface IJust<T> extends IMaybe<T> {
-	value(): T;
+export interface IMaybeFunction<T, R> extends IMaybe<ApplyFunction<T,R>> {
+	applyTo(value: T): IMaybe<R>;
+	applyTo(value: IMaybe<T>): IMaybe<R>;
 }
 
-interface INothing<T> extends IMaybe<T> {
+export interface IJust<T> extends IMaybe<T> {
+	value(): T;
+}
+export interface IJustFunction<T, R> extends IMaybeFunction<T,R>, IJust<ApplyFunction<T,R>> {
+	value(): ApplyFunction<T,R>;
+}
+
+export interface INothing<T> extends IMaybe<T> {
+	value(): null | undefined;
+}
+
+interface INothingFunction<T, R> extends IMaybeFunction<T,R>, INothing<ApplyFunction<T,R>> {
 	value(): null | undefined;
 }
 
 export function maybe<T>(value?: T | null | undefined): IMaybe<T> {
 	return isNullOrUndefined(value) ? nothing() : just(value);
 }
+export function maybeFunction<T, R>(value?: ApplyFunction<T,R> | null | undefined): IMaybeFunction<T,R> {
+	return isNullOrUndefined(value) ? nothingFunction() : justFunction(value);
+}
 export function just<T>(value: T): IJust<T> {
 	return new Just(value);
 }
+export function justFunction<T, R>(value: ApplyFunction<T,R>): IJustFunction<T, R> {
+	return new JustFunction(value);
+}
 export function nothing<T>(value?: null | undefined): INothing<T> {
-	return new Nothing<T>(value);
+	return new Nothing(value);
+}
+export function nothingFunction<T,R>(value?: null | undefined): INothingFunction<T,R> {
+	return new NothingFunction<T,R>(value);
+}
+
+export function maybeApplyTo<T, R>(m: IMaybe<ApplyFunction<T,R>>, value: T | IMaybe<T>): IMaybe<R> {
+	if (isMaybe(value))
+		return value.apply(m);
+	return m.match(() => nothing(), f => maybe(f(value)) );
+}
+export function justApplyTo<T,R>(j: IJust<ApplyFunction<T,R>>, value: T | IMaybe<T>): IMaybe<R> {
+	if (isMaybe(value))
+		return value.apply(j);
+	return maybe(j.value()(value));
+}
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export function nothingApplyTo<T,R>(n: INothing<ApplyFunction<T,R>>, value: T | IMaybe<T>): IMaybe<R> {
+	return nothing();
 }
 
 
@@ -168,6 +206,7 @@ export function isMaybe<T = any>(value?: any): value is IMaybe<T> {
 		isFunctionWithLength(v.value, 0);
 }
 
+
 export class Just<T> implements IJust<T> {
 	
 	*[Symbol.iterator]() {
@@ -182,7 +221,7 @@ export class Just<T> implements IJust<T> {
 		this.internalValue = value;
 	}
 
-	apply<R>(m: IMaybe<(value: T) => R>): IMaybe<R> {
+	apply<R>(m: IMaybe<ApplyFunction<T,R>>): IMaybe<R> {
 		return m.match(() => nothing(), f => maybe(f(this.value()))); 
 	}
 
@@ -277,6 +316,20 @@ export class Just<T> implements IJust<T> {
 	}
 }
 
+export class JustFunction<T, R> extends Just<ApplyFunction<T,R>> implements IJustFunction<T, R> {
+	constructor(value: ApplyFunction<T,R>) {
+		super(value);
+	}
+	applyTo(value: T): IMaybe<R>;
+	applyTo(value: IMaybe<T>): IMaybe<R>;
+	applyTo(value: T | IMaybe<T>): IMaybe<R> {
+		if (isMaybe(value))
+			return value.apply<R>(this);
+		return maybe(this.value()(value));
+	}
+}
+
+
 export class Nothing<T> implements INothing<T> {
 	
 	*[Symbol.iterator]() {
@@ -289,7 +342,7 @@ export class Nothing<T> implements INothing<T> {
 	}
 
 	// eslint-disable-next-line @typescript-eslint/no-unused-vars
-	apply<R>(m: IMaybe<(value: T) => R>): IMaybe<R> {
+	apply<R>(m: IMaybe<ApplyFunction<T,R>>): IMaybe<R> {
 		return nothing<R>();
 	}
 	
@@ -370,5 +423,18 @@ export class Nothing<T> implements INothing<T> {
 	
 	value(): null | undefined {
 		return null;
+	}
+}
+
+export class NothingFunction<T,R> extends Nothing<(v:T) => R> implements INothingFunction<T,R> {
+	constructor(value?: null | undefined) {
+		super(value);
+	}
+
+	applyTo(value: T): IMaybe<R>;
+	applyTo(value: IMaybe<T>): IMaybe<R>;
+	// eslint-disable-next-line @typescript-eslint/no-unused-vars
+	applyTo(value: T | IMaybe<T>): IMaybe<R> {
+		return nothing();
 	}
 }
