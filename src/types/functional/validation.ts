@@ -1,6 +1,8 @@
 import { Left, Right, type IEither } from './either';
 import { isNullOrUndefined, isString } from './utils';
 
+// TODO remove IEither from implementation hierarchy
+
 export interface IValidation<ValidationError, R> extends IEither<ValidationError[], R> {
 
 	concat(other: IValidation<ValidationError, R>, howToconcat?: {

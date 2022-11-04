@@ -16,14 +16,14 @@ export interface IEither<L, R> {
 	 * Returns the Array representation of the current object
 	 */
 	asArray(): R[];
-	asArrayL(): L[];
+	// asArrayL(): L[];
 
 	/**
 	 * Either a b ~> Either a (b -> c) -> Either a c
 	 * @param e
 	 */
 	apply<RR>(e: IEither<L, (value: R) => RR>): IEither<L, RR>;
-	applyL<LL>(e: IEither<(value: L) => LL, R>): IEither<LL, R>;
+	// applyL<LL>(e: IEither<(value: L) => LL, R>): IEither<LL, R>;
 
 	biMap<LL, RR>(l: (value: L) => LL, r: (value: R) => RR): IEither<LL, RR>;
 
@@ -32,12 +32,31 @@ export interface IEither<L, R> {
 	 * @param f 
 	 */
 	chain<RR>(f: (value: R) => IEither<L, RR>): IEither<L, RR>;
-	chainL<LL>(f: (value: L) => IEither<LL, R>): IEither<LL, R>;
+	// chainL<LL>(f: (value: L) => IEither<LL, R>): IEither<LL, R>;
 
 	/**
 	 * Either a b ~> Either a b -> Either a b
+	 * 
+	 * - `concat (Left (x)) (Left (y))` is equivalent to `Left (concat (x) (y))`
+   * - `concat (Right (x)) (Right (y))` is equivalent to `Right (concat (x) (y))`
+   * - `concat (Left (x)) (Right (y))` is equivalent to `Right (y)`
+   * - `concat (Right (x)) (Left (y))` is equivalent to `Right (x)`
+	 * @example
+	 * 
+	 * > left('abc').concat(left('def'))
+	 * left('abcdef')
+	 * 
+	 * > right([1,2,3]).concat(right(4,5,6))
+	 * right([1,2,3,4,5,6])
+	 * 
+	 * > left('abc').concat(right([1,2,3]))
+	 * right([1,2,3])
+	 * 
+	 * > right([1,2,3]).concat(left('abc'))
+	 * right([1,2,3])
+	 * 
 	 * @param other 
-	 * @param howToconcat
+	 * @param howToConcat
 	 */
 	concat(other: IEither<L, R>, howToconcat?: {
 			howToConcatLeft?: ((tv: L, ov: L) => L) | null | undefined;
@@ -45,26 +64,31 @@ export interface IEither<L, R> {
 		} | null | undefined
 	): IEither<L, R>;
 
+	// concat(other: IEither<L, R>, howToConcat?: ((tv: R, ov: R) => R) | null | undefined): IEither<L, R>;
+	
+
 	equals(other: IEither<L, R>, predicates?: {
 			leftEqualsPredicate?: BooleanComparePredicate<L> | null | undefined;
 			rightEqualsPredicate?: BooleanComparePredicate<R> | null | undefined;
 		} | null | undefined
 	): boolean;
+	// equals(other: IEither<L, R>, predicate?: BooleanComparePredicate<R> | null | undefined): boolean;
 	/**
 	 * Either a b ~> (Either a b -> c) -> Either a c
 	 * @param f 
 	 */
 	extend<RR>(f: (value: IEither<L,R>) => RR): IEither<L, RR>;
-	extendL<LL>(f: (value: IEither<L,R>) => LL): IEither<LL, R>;
+	// extendL<LL>(f: (value: IEither<L,R>) => LL): IEither<LL, R>;
 
 	lessThen(other: IEither<L, R>, predicates?: {
 			leftEqualsPredicate?: BooleanComparePredicate<L> | null | undefined;
 			rightEqualsPredicate?: BooleanComparePredicate<R> | null | undefined;
 		} | null | undefined
 	): boolean;
+	// lessThen(other: IEither<L, R>, predicate?: BooleanComparePredicate<R> | null | undefined): boolean;
 
 	map<RR>(f: (value: R) => RR): IEither<L, RR>;
-	mapL<LL>(f: (value: L) => LL): IEither<LL, R>;
+	// mapL<LL>(f: (value: L) => LL): IEither<LL, R>;
 
 	match<T>(l: T | ((value: L) => T), r: T | ((value: R) => T)): T;
 
@@ -74,7 +98,9 @@ export interface IEither<L, R> {
 	 * @param initial 
 	 */
 	reduce<RR>(f: ( acc: RR, value: R) => RR, initial: RR): RR;
-	reduceL<LL>(f: ( acc: LL, value: L) => LL, initial: LL): LL;
+	// reduceL<LL>(f: ( acc: LL, value: L) => LL, initial: LL): LL;
+
+	swap(): IEither<R, L>;
 
 	/**
 	 * Helper function to execute side effects outside of the `ITappable<T>` instance during the methods chaining.  
@@ -89,7 +115,7 @@ export interface IEither<L, R> {
 	* @param f The function to be run to produce side effects
 	*/
 	then(f: (value: R) => void): IEither<L, R>;
-	thenL(f: (value: L) => void): IEither<L, R>;
+	// thenL(f: (value: L) => void): IEither<L, R>;
 
 	toString(): string;
 }
@@ -114,25 +140,19 @@ export function isEither<L = any, R = any>(value?: any): value is IEither<L, R> 
 		return false;
 	const v = value as IEither<L, R>;
 	return isFunctionWithLength(v.asArray, 0) &&
-		isFunctionWithLength(v.asArrayL, 0) &&
 		isFunctionWithLength(v.apply, 1) &&
-		isFunctionWithLength(v.applyL, 1) &&
 		isFunctionWithLength(v.biMap, 2) &&
 		isFunctionWithLength(v.chain, 1) &&
-		isFunctionWithLength(v.chainL, 1) &&
 		isFunctionWithLength(v.concat, 2) &&
 		isFunctionWithLength(v.equals, 2) &&
 		isFunctionWithLength(v.extend, 1) &&
-		isFunctionWithLength(v.extendL, 1) &&
 		isFunctionWithLength(v.lessThen, 2) &&
 		isFunctionWithLength(v.map, 1) &&
-		isFunctionWithLength(v.mapL, 1) &&
 		isFunctionWithLength(v.match, 2) &&
 		isFunctionWithLength(v.reduce, 2) &&
-		isFunctionWithLength(v.reduceL, 2) &&
+		isFunctionWithLength(v.swap, 0) &&
 		isFunctionWithLength(v.tap, 1) &&
 		isFunctionWithLength(v.then, 1) &&
-		isFunctionWithLength(v.thenL, 1) &&
 		isFunctionWithLength(v.toString, 0);
 }
 
@@ -151,16 +171,9 @@ export class Right<L, R> implements IEither<L, R> {
 	asArray(): R[] {
 		return Array.from(this);
 	}
-	asArrayL(): L[] {
-		return [];
-	}
 
 	apply<RR>(e: IEither<L, (value: R) => RR>): IEither<L, RR> {
 		return e.match<IEither<L, RR>>(ov => left(ov), ov => right(ov(this.internalValue)));
-	}
-	// eslint-disable-next-line @typescript-eslint/no-unused-vars
-	applyL<LL>(e: IEither<(value: L) => LL, R>): IEither<LL, R> {
-		return right(this.internalValue);
 	}
 
 	biMap<LL, RR>(l: (value: L) => LL, r: (value: R) => RR): IEither<LL, RR> {
@@ -169,10 +182,6 @@ export class Right<L, R> implements IEither<L, R> {
 
 	chain<RR>(f: (value: R) => IEither<L, RR>): IEither<L, RR> {
 		return f(this.internalValue);
-	}
-	// eslint-disable-next-line @typescript-eslint/no-unused-vars
-	chainL<LL>(f: (value: L) => IEither<LL, R>): IEither<LL, R> {
-		return right(this.internalValue);
 	}
 
 	concat(
@@ -214,10 +223,6 @@ export class Right<L, R> implements IEither<L, R> {
 	extend<RR>(f: (value: IEither<L, R>) => RR): IEither<L, RR> {
 		return right(f(this));
 	}
-	// eslint-disable-next-line @typescript-eslint/no-unused-vars
-	extendL<LL>(f: (value: IEither<L, R>) => LL): IEither<LL, R> {
-		return right(this.internalValue);
-	}
 
 	lessThen(
 		other: IEither<L, R>,
@@ -237,10 +242,6 @@ export class Right<L, R> implements IEither<L, R> {
 	map<RR>(f: (value: R) => RR): IEither<L, RR> {
 		return right(f(this.internalValue));
 	}
-	// eslint-disable-next-line @typescript-eslint/no-unused-vars
-	mapL<LL>(f: (value: L) => LL): IEither<LL, R> {
-		return right(this.internalValue);
-	}
 
 	match<T>(l: T | ((value: L) => T), r: T | ((value: R) => T)): T {
 		let ir = r;
@@ -252,8 +253,9 @@ export class Right<L, R> implements IEither<L, R> {
 	reduce<RR>(f: (acc: RR, value: R) => RR, initial: RR): RR {
 		return f(initial, this.internalValue);
 	}
-	reduceL<LL>(f: (acc: LL, value: L) => LL, initial: LL): LL {
-		return initial;
+
+	swap(): IEither<R, L> {
+		return left(this.internalValue);
 	}
 
 	tap(f: (l: L | null | undefined, r: R | null | undefined) => void): IEither<L, R> {
@@ -263,10 +265,6 @@ export class Right<L, R> implements IEither<L, R> {
 
 	then(f: (value: R) => void): IEither<L, R> {
 		f(this.internalValue);
-		return this;
-	}
-	// eslint-disable-next-line @typescript-eslint/no-unused-vars
-	thenL(f: (value: L) => void): IEither<L, R> {
 		return this;
 	}
 
@@ -291,16 +289,10 @@ export class Left<L, R> implements IEither<L, R> {
 	asArray(): R[] {
 		return Array.from(this);
 	}
-	asArrayL(): L[] {
-		return [this.internalValue];
-	}
 
 	// eslint-disable-next-line @typescript-eslint/no-unused-vars
 	apply<RR>(other: IEither<L, (value: R) => RR>): IEither<L, RR> {
 		return left(this.internalValue);
-	}
-	applyL<LL>(e: IEither<(value: L) => LL, R>): IEither<LL, R> {
-		return e.match<IEither<LL, R>>(ov => left(ov(this.internalValue)), ov => right(ov));
 	}
 
 	// eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -312,10 +304,7 @@ export class Left<L, R> implements IEither<L, R> {
 	chain<RR>(f: (value: R) => IEither<L, RR>): IEither<L, RR> {
 		return left(this.internalValue);
 	}
-	chainL<LL>(f: (value: L) => IEither<LL, R>): IEither<LL, R> {
-		return f(this.internalValue);
-	}
-
+	
 	concat(
 		other: IEither<L, R>,
 		howToConcat?: {
@@ -323,18 +312,17 @@ export class Left<L, R> implements IEither<L, R> {
 			howToConcatRight?: (((tv: R, ov: R) => R)) | null | undefined;
 		} | null | undefined
 	): IEither<L, R> {
-		return this.mapL(tv => {
-			return other.match(ov => {
-				const howToConcatLeft = (howToConcat || {}).howToConcatLeft;
-				if (!isNullOrUndefined(howToConcatLeft))
-					return howToConcatLeft(tv, ov);
-				if (isString(tv))
-					return `${tv}${ov}` as L;
-				if (Array.isArray(tv))
-					return [...tv].concat(ov) as L;
-				return ov;
-			}, tv);
-		});
+		return other.match<IEither<L,R>>(ov => left(concatLeft(this.internalValue, ov)), () => other);
+		function concatLeft (tv: L, ov: L) {
+			const howToConcatLeft = (howToConcat || {}).howToConcatLeft;
+			if (!isNullOrUndefined(howToConcatLeft))
+				return howToConcatLeft(tv, ov);
+			if (isString(tv))
+				return `${tv}${ov}` as L;
+			if (Array.isArray(tv))
+				return [...tv].concat(ov) as L;
+			return ov;
+		}
 	}
 
 	equals(
@@ -356,9 +344,6 @@ export class Left<L, R> implements IEither<L, R> {
 	extend<RR>(f: (value: IEither<L, R>) => RR): IEither<L, RR> {
 		return left(this.internalValue);
 	}
-	extendL<LL>(f: (value: IEither<L, R>) => LL): IEither<LL, R> {
-		return left(f(this));
-	}
 
 	lessThen(
 		other: IEither<L, R>,
@@ -379,9 +364,6 @@ export class Left<L, R> implements IEither<L, R> {
 	map<RR>(f: (value: R) => RR): IEither<L, RR> {
 		return left(this.internalValue);
 	}
-	mapL<LL>(f: (value: L) => LL): IEither<LL, R> {
-		return left(f(this.internalValue));
-	}
 
 	// eslint-disable-next-line @typescript-eslint/no-unused-vars
 	match<T>(l: (value: L) => T, r: (value: R) => T): T {
@@ -395,6 +377,10 @@ export class Left<L, R> implements IEither<L, R> {
 		return f(initial, this.internalValue);
 	}
 
+	swap(): IEither<R, L> {
+		return right(this.internalValue);
+	}
+
 	tap(f: (l: L | null | undefined, r: R | null | undefined) => void): IEither<L, R> {
 		f(this.internalValue, void 0);
 		return this;
@@ -402,10 +388,6 @@ export class Left<L, R> implements IEither<L, R> {
 
 	// eslint-disable-next-line @typescript-eslint/no-unused-vars
 	then(f: (value: R) => void): IEither<L, R> {
-		return this;
-	}
-	thenL(f: (value: L) => void): IEither<L, R> {
-		f(this.internalValue);
 		return this;
 	}
 
