@@ -1,3 +1,4 @@
+import type { Unit } from "./unit";
 import { isFunction, isFunctionWithLength, isNullOrUndefined, isString, type BooleanComparePredicate } from "./utils";
 
 export function success<ResultError, ResultData>(value: ResultData): ISuccessResult<ResultError, ResultData> {
@@ -115,13 +116,13 @@ export interface IActionResult<ResultError, ResultData> {
 	 * @param func function executed when the execution chain reaches the `tap`
 	 * @returns the instance whiche the `tap` is executed over
 	 */
-	tap(func: (l: ResultError | null | undefined, r: ResultData | null | undefined) => void): IActionResult<ResultError, ResultData>;
+	tap(func: (l: ResultError | null | undefined, r: ResultData | null | undefined) => Unit): IActionResult<ResultError, ResultData>;
 	/**
 	* Methods intended to execute side effetcs if the `IMaybe<T>` instance method `hasValue` returns `true`.  
 	* Returns the `IMaybe<T>` instance to allow the `IMaybe<T>` methods chaining
 	* @param s The function to be run to produce side effects
 	*/
-	then(s: (value: ResultData) => void): IActionResult<ResultError, ResultData>;
+	then(s: (value: ResultData) => Unit): IActionResult<ResultError, ResultData>;
 
 	toString(): string;
 }
@@ -265,12 +266,12 @@ export class Success<ResultError, ResultData> implements ISuccessResult<ResultEr
 		return this.resultData;
 	}
 
-	tap(func: (l: ResultError | null | undefined, r: ResultData | null | undefined) => void): IActionResult<ResultError, ResultData> {
+	tap(func: (l: ResultError | null | undefined, r: ResultData | null | undefined) => Unit): IActionResult<ResultError, ResultData> {
 		func(void 0, this.succesData());
 		return this;
 	}
 
-	then(s: (value: ResultData) => void): IActionResult<ResultError, ResultData> {
+	then(s: (value: ResultData) => Unit): IActionResult<ResultError, ResultData> {
 		s(this.succesData());
 		return this;
 	}

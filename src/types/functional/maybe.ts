@@ -7,6 +7,7 @@ import {
 import type {
 	BooleanComparePredicate
 } from './utils';
+import type { Unit } from './unit';
 
 export function maybe<T>(value?: T | null | undefined): IMaybe<T> {
 	return isNullOrUndefined(value) ? nothing() : just(value);
@@ -168,13 +169,13 @@ export interface IMaybe<T> {
 	 * @param f function executed when the execution chain reaches the `tap`
 	 * @returns the instance whiche the `tap` is executed over
 	 */
-	tap(f: (value: T | null | undefined ) => void): IMaybe<T>;
+	tap(f: (value: T | null | undefined ) => Unit): IMaybe<T>;
 	/**
 	 * Methods intended to execute side effetcs if the `IMaybe<T>` instance method `hasValue` returns `true`.  
 	 * Returns the `IMaybe<T>` instance to allow the `IMaybe<T>` methods chaining
 	 * @param f The function to be run to produce side effects
 	 */
-	then(f: (value: T) => void): IMaybe<T>;
+	then(f: (value: T) => Unit): IMaybe<T>;
 
 	toString(): string;
 	
@@ -283,11 +284,11 @@ export class Just<T> implements IJust<T> {
 		return f(initial, this.value());
 	}
 
-	tap(f: (value: T | null | undefined) => void): IMaybe<T> {
+	tap(f: (value: T | null | undefined) => Unit): IMaybe<T> {
 		f(this.value());
 		return this;
 	}
-	then(f: (value: T) => void): IMaybe<T> {
+	then(f: (value: T) => Unit): IMaybe<T> {
 		f(this.value());
 		return this;
 	}
@@ -378,12 +379,12 @@ export class Nothing<T> implements INothing<T> {
 		return initial;
 	}
 
-	tap(f: (value: T | null | undefined) => void): IMaybe<T> {
+	tap(f: (value: T | null | undefined) => Unit): IMaybe<T> {
 		f(this.value());
 		return this;
 	}
 	// eslint-disable-next-line @typescript-eslint/no-unused-vars
-	then(f: (value: T) => void): IMaybe<T> {
+	then(f: (value: T) => Unit): IMaybe<T> {
 		return this;
 	}
 	toString(): string {

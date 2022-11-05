@@ -8,6 +8,7 @@ import {
 import type {
 	BooleanComparePredicate
 } from './utils';
+import type { Unit } from './unit';
 
 export function either<R>(value?: R | null | undefined): IEither<null | undefined, R> {
 	if (isNullOrUndefined(value))
@@ -148,13 +149,13 @@ export interface IEither<L, R> {
 	 * @param f function executed when the execution chain reaches the `tap`
 	 * @returns the instance whiche the `tap` is executed over
 	 */
-	tap(f: (l: L | null | undefined, r: R | null | undefined) => void): IEither<L, R>;
+	tap(f: (l: L | null | undefined, r: R | null | undefined) => Unit): IEither<L, R>;
 	/**
 	* Methods intended to execute side effetcs if the `IMaybe<T>` instance method `hasValue` returns `true`.  
 	* Returns the `IMaybe<T>` instance to allow the `IMaybe<T>` methods chaining
 	* @param f The function to be run to produce side effects
 	*/
-	then(f: (value: R) => void): IEither<L, R>;
+	then(f: (value: R) => Unit): IEither<L, R>;
 
 	toString(): string;
 }
@@ -281,12 +282,12 @@ export class Right<L, R> implements IEither<L, R> {
 		return left(this.internalValue);
 	}
 
-	tap(f: (l: L | null | undefined, r: R | null | undefined) => void): IEither<L, R> {
+	tap(f: (l: L | null | undefined, r: R | null | undefined) => Unit): IEither<L, R> {
 		f(void 0, this.internalValue);
 		return this;
 	}
 
-	then(f: (value: R) => void): IEither<L, R> {
+	then(f: (value: R) => Unit): IEither<L, R> {
 		f(this.internalValue);
 		return this;
 	}

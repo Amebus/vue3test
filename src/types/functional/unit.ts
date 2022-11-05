@@ -1,5 +1,9 @@
 export class Unit {}
 
+export function unit() {
+	return new Unit();
+}
+
 // type Fn<TArgs extends any[], TResult> = (...args: TArgs) => TResult;
 
 // export function toFunction(fn: (...args: any[]) => void): (...args: any[]) => void {
