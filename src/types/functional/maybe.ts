@@ -194,7 +194,7 @@ export interface INothing<T> extends IMaybe<T> {
 
 export class Just<T> implements IJust<T> {
 	
-	*[Symbol.iterator]() {
+	*[Symbol.iterator](): Generator<T, void, unknown> {
 		yield this.value();
 	}
 
@@ -302,7 +302,7 @@ export class Just<T> implements IJust<T> {
 }
 export class Nothing<T> implements INothing<T> {
 	
-	*[Symbol.iterator]() {
+	*[Symbol.iterator](): Generator<T, void, unknown> {
 		// nothing doesn't return anything
 	}
 

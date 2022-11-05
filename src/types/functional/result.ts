@@ -63,13 +63,17 @@ export interface IActionResult<ResultError, ResultData> {
 	 * @param other 
 	 * @param howToConcat
 	 */
-	concat(other: IActionResult<ResultError, ResultData>, howToConcat?: {
+	concat(
+		other: IActionResult<ResultError, ResultData>,
+		howToConcat?: {
 			howToConcatFailure?: ((tv: ResultError, ov: ResultError) => ResultError) | null | undefined;
 			howToConcatSuccess?: ((tv: ResultData, ov: ResultData) => ResultData) | null | undefined;
 		} | null | undefined
 	): IActionResult<ResultError, ResultData>;
 
-	equals(other: IActionResult<ResultError, ResultData>, predicates?: {
+	equals(
+		other: IActionResult<ResultError, ResultData>,
+		predicates?: {
 			failureEqualsPredicate?: BooleanComparePredicate<ResultError> | null | undefined;
 			successEqualsPredicate?: BooleanComparePredicate<ResultData> | null | undefined;
 		} | null | undefined
@@ -89,7 +93,9 @@ export interface IActionResult<ResultError, ResultData> {
 	isFailure(): boolean;
 	isSuccess(): boolean;
 
-	lessThen(other: IActionResult<ResultError, ResultData>, predicates?: {
+	lessThen(
+		other: IActionResult<ResultError, ResultData>,
+		predicates?: {
 			failureEqualsPredicate?: BooleanComparePredicate<ResultError> | null | undefined;
 			successEqualsPredicate?: BooleanComparePredicate<ResultData> | null | undefined;
 		} | null | undefined
@@ -137,7 +143,7 @@ export interface IFailureResult<ResultError, ResultData> extends IActionResult<R
 
 export class Success<ResultError, ResultData> implements ISuccessResult<ResultError, ResultData> {
 	
-	*[Symbol.iterator]() {
+	*[Symbol.iterator](): Generator<ResultData, void, unknown> {
 		yield this.resultData;
 	}
 
@@ -283,7 +289,7 @@ export class Success<ResultError, ResultData> implements ISuccessResult<ResultEr
 
 export class Failure<ResultError, ResultData> implements IFailureResult<ResultError, ResultData> {
 
-	*[Symbol.iterator]() {
+	*[Symbol.iterator](): Generator<ResultData, void, unknown> {
 		// Failure has no ResultData
 	}
 
