@@ -9,6 +9,43 @@ import type {
 	BooleanComparePredicate
 } from './utils';
 
+export function either<R>(value?: R | null | undefined): IEither<null | undefined, R> {
+	if (isNullOrUndefined(value))
+		return left(value);
+	return right(value);
+}
+
+export function left<L, R>(l: L) {
+	return new Left<L,R>(l);
+}
+export function right<L, R>(r: R) {
+	return new Right<L,R>(r);
+}
+
+export function isEither<L, R>(value?: any): value is IEither<L, R> {
+	if (isNullOrUndefined(value))
+		return false;
+	if (isNullOrUndefined(value[Symbol.iterator]))
+		return false;
+	const v = value as IEither<L, R>;
+	return isFunctionWithLength(v.asArray, 0) &&
+		isFunctionWithLength(v.apply, 1) &&
+		isFunctionWithLength(v.biMap, 2) &&
+		isFunctionWithLength(v.chain, 1) &&
+		isFunctionWithLength(v.concat, 2) &&
+		isFunctionWithLength(v.equals, 2) &&
+		isFunctionWithLength(v.extend, 1) &&
+		isFunctionWithLength(v.getOrElse, 1) &&
+		isFunctionWithLength(v.lessThen, 2) &&
+		isFunctionWithLength(v.map, 1) &&
+		isFunctionWithLength(v.match, 2) &&
+		isFunctionWithLength(v.orElse, 1) &&
+		isFunctionWithLength(v.reduce, 2) &&
+		isFunctionWithLength(v.swap, 0) &&
+		isFunctionWithLength(v.tap, 1) &&
+		isFunctionWithLength(v.then, 1) &&
+		isFunctionWithLength(v.toString, 0);
+}
 export interface IEither<L, R> {
 
 	[Symbol.iterator](): Generator<R, void, unknown>;
@@ -80,6 +117,8 @@ export interface IEither<L, R> {
 	extend<RR>(f: (value: IEither<L,R>) => RR): IEither<L, RR>;
 	// extendL<LL>(f: (value: IEither<L,R>) => LL): IEither<LL, R>;
 
+	getOrElse(other: R | (() => R)) : R;
+
 	lessThen(other: IEither<L, R>, predicates?: {
 			leftEqualsPredicate?: BooleanComparePredicate<L> | null | undefined;
 			rightEqualsPredicate?: BooleanComparePredicate<R> | null | undefined;
@@ -92,6 +131,7 @@ export interface IEither<L, R> {
 
 	match<T>(l: T | ((value: L) => T), r: T | ((value: R) => T)): T;
 
+	orElse(other: IEither<L,R> | ((lv: L) => IEither<L,R>)): IEither<L,R>;
 	/**
 	 * Either a b ~> ((c, b) -> c, c) -> c
 	 * @param f 
@@ -115,45 +155,8 @@ export interface IEither<L, R> {
 	* @param f The function to be run to produce side effects
 	*/
 	then(f: (value: R) => void): IEither<L, R>;
-	// thenL(f: (value: L) => void): IEither<L, R>;
 
 	toString(): string;
-}
-
-export function either<R>(value?: R | null | undefined): IEither<null | undefined, R> {
-	if (isNullOrUndefined(value))
-		return left(value);
-	return right(value);
-}
-
-export function left<L, R>(l: L) {
-	return new Left<L,R>(l);
-}
-export function right<L, R>(r: R) {
-	return new Right<L,R>(r);
-}
-
-export function isEither<L = any, R = any>(value?: any): value is IEither<L, R> {
-	if (isNullOrUndefined(value))
-		return false;
-	if (isNullOrUndefined(value[Symbol.iterator]))
-		return false;
-	const v = value as IEither<L, R>;
-	return isFunctionWithLength(v.asArray, 0) &&
-		isFunctionWithLength(v.apply, 1) &&
-		isFunctionWithLength(v.biMap, 2) &&
-		isFunctionWithLength(v.chain, 1) &&
-		isFunctionWithLength(v.concat, 2) &&
-		isFunctionWithLength(v.equals, 2) &&
-		isFunctionWithLength(v.extend, 1) &&
-		isFunctionWithLength(v.lessThen, 2) &&
-		isFunctionWithLength(v.map, 1) &&
-		isFunctionWithLength(v.match, 2) &&
-		isFunctionWithLength(v.reduce, 2) &&
-		isFunctionWithLength(v.swap, 0) &&
-		isFunctionWithLength(v.tap, 1) &&
-		isFunctionWithLength(v.then, 1) &&
-		isFunctionWithLength(v.toString, 0);
 }
 
 export class Right<L, R> implements IEither<L, R> {
@@ -161,12 +164,12 @@ export class Right<L, R> implements IEither<L, R> {
 	*[Symbol.iterator]() {
 		yield this.internalValue;
 	}
-
-	private internalValue: R;
-
+	
 	constructor(value: R) {
 		this.internalValue = value;
 	}
+	
+	private internalValue: R;
 
 	asArray(): R[] {
 		return Array.from(this);
@@ -191,18 +194,23 @@ export class Right<L, R> implements IEither<L, R> {
 			howToConcatRight?: ((tv: R, ov: R) => R) | null | undefined;
 		} | null | undefined
 	): IEither<L, R> {
-		return this.map(tv => {
-			return other.match(tv, ov => {
-				const howToConcatRight = (howToConcat || {}).howToConcatRight;
-				if (!isNullOrUndefined(howToConcatRight))
-					return howToConcatRight(tv, ov);
-				if (isString(tv))
-					return `${tv}${ov}` as R;
-				if (Array.isArray(tv))
-					return [...tv].concat(ov) as R;
-				return ov;
-			});
-		});
+		return this.map(
+			tv => {
+				return other.match(
+					tv, 
+					ov => {
+						const howToConcatRight = (howToConcat || {}).howToConcatRight;
+						if (!isNullOrUndefined(howToConcatRight))
+							return howToConcatRight(tv, ov);
+						if (isString(tv))
+							return `${tv}${ov}` as R;
+						if (Array.isArray(tv))
+							return [...tv].concat(ov) as R;
+						return ov;
+					}
+				);
+			}
+		);
 	}
 
 	equals(
@@ -212,16 +220,23 @@ export class Right<L, R> implements IEither<L, R> {
 			rightEqualsPredicate?: BooleanComparePredicate<R> | null | undefined;
 		} | null | undefined
 	): boolean {
-		return other.match(false, ov => {
-			let rep = (predicates || {} ).rightEqualsPredicate;
-			if (isNullOrUndefined(rep))
-				rep = (tv, ov) => tv === ov;
-			return rep(this.internalValue, ov);
-		});
+		return other.match(
+			false,
+			ov => {
+				let rep = (predicates || {} ).rightEqualsPredicate;
+				if (isNullOrUndefined(rep))
+					rep = (tv, ov) => tv === ov;
+				return rep(this.internalValue, ov);
+			}
+		);
 	}
 
 	extend<RR>(f: (value: IEither<L, R>) => RR): IEither<L, RR> {
 		return right(f(this));
+	}
+
+	getOrElse(other: R | (() => R)): R {
+		return this.match(other, tv => tv);
 	}
 
 	lessThen(
@@ -231,12 +246,15 @@ export class Right<L, R> implements IEither<L, R> {
 			rightEqualsPredicate?: BooleanComparePredicate<R> | null | undefined;
 		} | null | undefined
 	): boolean {
-		return other.match(false, ov => {
-			let rep = (predicates || {}).rightEqualsPredicate;
-			if (isNullOrUndefined(rep))
-				rep = (tv, ov) => tv < ov;
-			return rep(this.internalValue, ov);
-		});
+		return other.match(
+			false,
+			ov => {
+				let rep = (predicates || {}).rightEqualsPredicate;
+				if (isNullOrUndefined(rep))
+					rep = (tv, ov) => tv < ov;
+				return rep(this.internalValue, ov);
+			}
+		);
 	}
 
 	map<RR>(f: (value: R) => RR): IEither<L, RR> {
@@ -248,6 +266,11 @@ export class Right<L, R> implements IEither<L, R> {
 		if (isFunction(ir))
 			ir = ir(this.internalValue);
 		return ir;
+	}
+
+	// eslint-disable-next-line @typescript-eslint/no-unused-vars
+	orElse(other: IEither<L, R> | ((lv: L) => IEither<L, R>)): IEither<L, R> {
+		return this;
 	}
 
 	reduce<RR>(f: (acc: RR, value: R) => RR, initial: RR): RR {
@@ -312,7 +335,10 @@ export class Left<L, R> implements IEither<L, R> {
 			howToConcatRight?: (((tv: R, ov: R) => R)) | null | undefined;
 		} | null | undefined
 	): IEither<L, R> {
-		return other.match<IEither<L,R>>(ov => left(concatLeft(this.internalValue, ov)), () => other);
+		return other.match<IEither<L,R>>(
+			ov => left(concatLeft(this.internalValue, ov)),
+			() => other
+		);
 		function concatLeft (tv: L, ov: L) {
 			const howToConcatLeft = (howToConcat || {}).howToConcatLeft;
 			if (!isNullOrUndefined(howToConcatLeft))
@@ -332,17 +358,27 @@ export class Left<L, R> implements IEither<L, R> {
 			rightEqualsPredicate?: BooleanComparePredicate<R> | null | undefined;
 		} | null | undefined
 	): boolean {
-		return other.match(ov => {
-			let lep = (predicates || {}).leftEqualsPredicate;
-			if (isNullOrUndefined(lep))
-				lep = (tv, ov) => tv === ov;
-			return lep(this.internalValue, ov);
-		}, false);
+		return other.match(
+			ov => {
+				let lep = (predicates || {}).leftEqualsPredicate;
+				if (isNullOrUndefined(lep))
+					lep = (tv, ov) => tv === ov;
+				return lep(this.internalValue, ov);
+			},
+			false
+		);
 	}
 
 	// eslint-disable-next-line @typescript-eslint/no-unused-vars
 	extend<RR>(f: (value: IEither<L, R>) => RR): IEither<L, RR> {
 		return left(this.internalValue);
+	}
+
+	getOrElse(other: R | (() => R)): R {
+		let v = other;
+		if (isFunction(v))
+			v = v();
+		return v;
 	}
 
 	lessThen(
@@ -352,12 +388,15 @@ export class Left<L, R> implements IEither<L, R> {
 			rightEqualsPredicate?: BooleanComparePredicate<R> | null | undefined;
 		}
 	): boolean {
-		return other.match(ov => {
-			let lep = (predicates  || {}).leftEqualsPredicate;
-			if (isNullOrUndefined(lep))
-				lep = (tv, ov) => tv < ov;
-			return lep(this.internalValue, ov);
-		}, true);
+		return other.match(
+			ov => {
+				let lep = (predicates  || {}).leftEqualsPredicate;
+				if (isNullOrUndefined(lep))
+					lep = (tv, ov) => tv < ov;
+				return lep(this.internalValue, ov);
+			},
+			true
+		);
 	}
 
 	// eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -370,11 +409,15 @@ export class Left<L, R> implements IEither<L, R> {
 		return l(this.internalValue);
 	}
 
+	orElse(other: IEither<L, R> | ((lv: L) => IEither<L, R>)): IEither<L, R> {
+		let v = other;
+		if (isFunction(v))
+			v = v(this.internalValue);
+		return v;
+	}
+
 	reduce<RR>(f: (acc: RR, value: R) => RR, initial: RR): RR {
 		return initial;
-	}
-	reduceL<LL>(f: (acc: LL, value: L) => LL, initial: LL): LL {
-		return f(initial, this.internalValue);
 	}
 
 	swap(): IEither<R, L> {

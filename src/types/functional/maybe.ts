@@ -8,6 +8,66 @@ import type {
 	BooleanComparePredicate
 } from './utils';
 
+export function maybe<T>(value?: T | null | undefined): IMaybe<T> {
+	return isNullOrUndefined(value) ? nothing() : just(value);
+}
+export function maybeFunction<T, R>(value?: ApplyFunction<T,R> | null | undefined): IMaybeFunction<T,R> {
+	return isNullOrUndefined(value) ? nothingFunction() : justFunction(value);
+}
+export function just<T>(value: T): IJust<T> {
+	return new Just(value);
+}
+export function justFunction<T, R>(value: ApplyFunction<T,R>): IJustFunction<T, R> {
+	return new JustFunction(value);
+}
+export function nothing<T>(value?: null | undefined): INothing<T> {
+	return new Nothing(value);
+}
+export function nothingFunction<T,R>(value?: null | undefined): INothingFunction<T,R> {
+	return new NothingFunction<T,R>(value);
+}
+
+export function maybeApplyTo<T, R>(m: IMaybe<ApplyFunction<T,R>>, value: T | IMaybe<T>): IMaybe<R> {
+	if (isMaybe(value))
+		return value.apply(m);
+	return m.match(() => nothing(), f => maybe(f(value)) );
+}
+export function justApplyTo<T,R>(j: IJust<ApplyFunction<T,R>>, value: T | IMaybe<T>): IMaybe<R> {
+	if (isMaybe(value))
+		return value.apply(j);
+	return maybe(j.value()(value));
+}
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export function nothingApplyTo<T,R>(n: INothing<ApplyFunction<T,R>>, value: T | IMaybe<T>): IMaybe<R> {
+	return nothing();
+}
+
+export function isMaybe<T>(value?: any): value is IMaybe<T> {
+	if (isNullOrUndefined(value))
+		return false;
+	if (isNullOrUndefined(value[Symbol.iterator]))
+		return false;
+	const v = value as IMaybe<T>;
+	return isFunctionWithLength(v.asArray, 0) &&
+		isFunctionWithLength(v.apply, 1) &&
+		isFunctionWithLength(v.chain, 1) &&
+		isFunctionWithLength(v.concat, 2) &&
+		isFunctionWithLength(v.equals, 2) &&
+		isFunctionWithLength(v.extend, 1) &&
+		isFunctionWithLength(v.filter, 1) &&
+		isFunctionWithLength(v.getOrElse, 1) &&
+		isFunctionWithLength(v.hasValue, 0) &&
+		isFunctionWithLength(v.lessThen, 2) &&
+		isFunctionWithLength(v.map, 1) &&
+		isFunctionWithLength(v.match, 2) &&
+		isFunctionWithLength(v.orElse, 1) &&
+		isFunctionWithLength(v.reduce, 2) &&
+		isFunctionWithLength(v.tap, 1) &&
+		isFunctionWithLength(v.then, 1) &&
+		isFunctionWithLength(v.toString, 0) &&
+		isFunctionWithLength(v.value, 0);
+}
+
 export type ApplyFunction<T,R> = ((v:T) => R | null | undefined);
 
 export interface IMaybe<T> {
@@ -124,88 +184,12 @@ export interface IMaybe<T> {
 	 */
 	value(): T | null | undefined;
 }
-
-export interface IMaybeFunction<T, R> extends IMaybe<ApplyFunction<T,R>> {
-	applyTo(value: T): IMaybe<R>;
-	applyTo(value: IMaybe<T>): IMaybe<R>;
-}
-
 export interface IJust<T> extends IMaybe<T> {
 	value(): T;
 }
-export interface IJustFunction<T, R> extends IMaybeFunction<T,R>, IJust<ApplyFunction<T,R>> {
-	value(): ApplyFunction<T,R>;
-}
-
 export interface INothing<T> extends IMaybe<T> {
 	value(): null | undefined;
 }
-
-interface INothingFunction<T, R> extends IMaybeFunction<T,R>, INothing<ApplyFunction<T,R>> {
-	value(): null | undefined;
-}
-
-export function maybe<T>(value?: T | null | undefined): IMaybe<T> {
-	return isNullOrUndefined(value) ? nothing() : just(value);
-}
-export function maybeFunction<T, R>(value?: ApplyFunction<T,R> | null | undefined): IMaybeFunction<T,R> {
-	return isNullOrUndefined(value) ? nothingFunction() : justFunction(value);
-}
-export function just<T>(value: T): IJust<T> {
-	return new Just(value);
-}
-export function justFunction<T, R>(value: ApplyFunction<T,R>): IJustFunction<T, R> {
-	return new JustFunction(value);
-}
-export function nothing<T>(value?: null | undefined): INothing<T> {
-	return new Nothing(value);
-}
-export function nothingFunction<T,R>(value?: null | undefined): INothingFunction<T,R> {
-	return new NothingFunction<T,R>(value);
-}
-
-export function maybeApplyTo<T, R>(m: IMaybe<ApplyFunction<T,R>>, value: T | IMaybe<T>): IMaybe<R> {
-	if (isMaybe(value))
-		return value.apply(m);
-	return m.match(() => nothing(), f => maybe(f(value)) );
-}
-export function justApplyTo<T,R>(j: IJust<ApplyFunction<T,R>>, value: T | IMaybe<T>): IMaybe<R> {
-	if (isMaybe(value))
-		return value.apply(j);
-	return maybe(j.value()(value));
-}
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-export function nothingApplyTo<T,R>(n: INothing<ApplyFunction<T,R>>, value: T | IMaybe<T>): IMaybe<R> {
-	return nothing();
-}
-
-
-export function isMaybe<T = any>(value?: any): value is IMaybe<T> {
-	if (isNullOrUndefined(value))
-		return false;
-	if (isNullOrUndefined(value[Symbol.iterator]))
-		return false;
-	const v = value as IMaybe<T>;
-	return isFunctionWithLength(v.asArray, 0) &&
-		isFunctionWithLength(v.apply, 1) &&
-		isFunctionWithLength(v.chain, 1) &&
-		isFunctionWithLength(v.concat, 2) &&
-		isFunctionWithLength(v.equals, 2) &&
-		isFunctionWithLength(v.extend, 1) &&
-		isFunctionWithLength(v.filter, 1) &&
-		isFunctionWithLength(v.getOrElse, 1) &&
-		isFunctionWithLength(v.hasValue, 0) &&
-		isFunctionWithLength(v.lessThen, 2) &&
-		isFunctionWithLength(v.map, 1) &&
-		isFunctionWithLength(v.match, 2) &&
-		isFunctionWithLength(v.orElse, 1) &&
-		isFunctionWithLength(v.reduce, 2) &&
-		isFunctionWithLength(v.tap, 1) &&
-		isFunctionWithLength(v.then, 1) &&
-		isFunctionWithLength(v.toString, 0) &&
-		isFunctionWithLength(v.value, 0);
-}
-
 
 export class Just<T> implements IJust<T> {
 	
@@ -315,21 +299,6 @@ export class Just<T> implements IJust<T> {
 		return this.internalValue;
 	}
 }
-
-export class JustFunction<T, R> extends Just<ApplyFunction<T,R>> implements IJustFunction<T, R> {
-	constructor(value: ApplyFunction<T,R>) {
-		super(value);
-	}
-	applyTo(value: T): IMaybe<R>;
-	applyTo(value: IMaybe<T>): IMaybe<R>;
-	applyTo(value: T | IMaybe<T>): IMaybe<R> {
-		if (isMaybe(value))
-			return value.apply<R>(this);
-		return maybe(this.value()(value));
-	}
-}
-
-
 export class Nothing<T> implements INothing<T> {
 	
 	*[Symbol.iterator]() {
@@ -418,7 +387,7 @@ export class Nothing<T> implements INothing<T> {
 		return this;
 	}
 	toString(): string {
-		return 'Maybe.Nothing';
+		return 'Maybe.Nothing()';
 	}
 	
 	value(): null | undefined {
@@ -426,6 +395,30 @@ export class Nothing<T> implements INothing<T> {
 	}
 }
 
+export interface IMaybeFunction<T, R> extends IMaybe<ApplyFunction<T,R>> {
+	applyTo(value: T): IMaybe<R>;
+	applyTo(value: IMaybe<T>): IMaybe<R>;
+}
+export interface IJustFunction<T, R> extends IMaybeFunction<T,R>, IJust<ApplyFunction<T,R>> {
+	value(): ApplyFunction<T,R>;
+}
+export interface INothingFunction<T, R> extends IMaybeFunction<T,R>, INothing<ApplyFunction<T,R>> {
+	value(): null | undefined;
+}
+
+export class JustFunction<T, R> extends Just<ApplyFunction<T,R>> implements IJustFunction<T, R> {
+	constructor(value: ApplyFunction<T,R>) {
+		super(value);
+	}
+	applyTo(value: T): IMaybe<R>;
+	applyTo(value: IMaybe<T>): IMaybe<R>;
+	applyTo(value: T | IMaybe<T>): IMaybe<R> {
+		if (isMaybe(value))
+			return value.apply<R>(this);
+		// return maybe(this.value()(value));
+		return maybe(value).apply(this);
+	}
+}
 export class NothingFunction<T,R> extends Nothing<(v:T) => R> implements INothingFunction<T,R> {
 	constructor(value?: null | undefined) {
 		super(value);
