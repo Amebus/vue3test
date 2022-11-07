@@ -4,7 +4,7 @@ export type BooleanComparePredicate<T> = (current: T, other: T) => boolean;
  * 
  * @since 1.0.0
  * @param {*} value The value to check.
- * @returns {boolean} Returns `true` if `value` is `null` or `undefined`, else false.
+ * @returns {boolean} Returns `true` if `value` is `null`, `undefined` or `NaN`, else false.
  * @example
  * 
  * isNullOrUndefined(null)
@@ -25,7 +25,9 @@ export type BooleanComparePredicate<T> = (current: T, other: T) => boolean;
  * 
  */
 export function isNullOrUndefined(value?: any): value is null | undefined {
-	return value === null || value === undefined || typeof value === 'undefined';
+  // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/NaN
+	return typeof value === 'undefined' || value === void 0 || value === null || Number.isNaN(value);
+  // value == null || Number.isNaN(value);
 }
 
 /**

@@ -28,6 +28,7 @@ export function isActionResult<ResultError, ResultData>(value?: any): value is I
 		isFunctionWithLength(v.lessThen, 2) &&
 		isFunctionWithLength(v.map, 1) &&
 		isFunctionWithLength(v.match, 2) &&
+		isFunctionWithLength(v.orElse, 1) &&
 		isFunctionWithLength(v.reduce, 2) &&
 		isFunctionWithLength(v.swap, 0) &&
 		isFunctionWithLength(v.tap, 1) &&

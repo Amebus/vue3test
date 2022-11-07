@@ -1,6 +1,6 @@
 
 import type { Unit } from './unit';
-import { isFunction, isNullOrUndefined, isString, type BooleanComparePredicate } from './utils';
+import { isFunction, isFunctionWithLength, isNullOrUndefined, isString, type BooleanComparePredicate } from './utils';
 
 export function validate<ValidationError, Data>(value: Data, f: (value: Data) => ValidationError[]): IValidation<ValidationError, Data> {
 	return new Valid<ValidationError, Data>(value).validate(f);
@@ -16,6 +16,35 @@ export function valid<ValidationError, R>(value: R): IValidation<ValidationError
 
 export function invalid<ValidationError, Data>(errors: ValidationError[]): IValidation<ValidationError, Data> {
 	return new Invalid(errors);
+}
+
+export function isValidation<ValidationError, Data>(value?: any): value is IValidation<ValidationError, Data> {
+	if (isNullOrUndefined(value))
+		return false;
+	if (isNullOrUndefined(value[Symbol.iterator]))
+		return false;
+	const v = value as IValidation<ValidationError, Data>;
+	return isFunctionWithLength(v.addError, 1) &&
+		isFunctionWithLength(v.addErrors, 1) &&
+		isFunctionWithLength(v.apply, 1) &&
+		isFunctionWithLength(v.asArray, 0) &&
+		isFunctionWithLength(v.biMap, 2) &&
+		isFunctionWithLength(v.chain, 1) &&
+		isFunctionWithLength(v.concat, 2) &&
+		isFunctionWithLength(v.equals, 2) &&
+		isFunctionWithLength(v.extend, 1) &&
+		isFunctionWithLength(v.getOrElse, 1) &&
+		isFunctionWithLength(v.isInvalid, 0) &&
+		isFunctionWithLength(v.isValid, 0) &&
+		isFunctionWithLength(v.lessThen, 2) &&
+		isFunctionWithLength(v.map, 1) &&
+		isFunctionWithLength(v.match, 2) &&
+		isFunctionWithLength(v.orElse, 1) &&
+		isFunctionWithLength(v.reduce, 2) &&
+		isFunctionWithLength(v.swap, 0) &&
+		isFunctionWithLength(v.tap, 1) &&
+		isFunctionWithLength(v.then, 1) &&
+		isFunctionWithLength(v.toString, 0);
 }
 
 export interface IValidation<ValidationError, Data> {

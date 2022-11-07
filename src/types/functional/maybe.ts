@@ -416,7 +416,6 @@ export class JustFunction<T, R> extends Just<ApplyFunction<T,R>> implements IJus
 	applyTo(value: T | IMaybe<T>): IMaybe<R> {
 		if (isMaybe(value))
 			return value.apply<R>(this);
-		// return maybe(this.value()(value));
 		return maybe(value).apply(this);
 	}
 }
