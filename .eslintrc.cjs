@@ -4,22 +4,13 @@ require('@rushstack/eslint-patch/modern-module-resolution');
 module.exports = {
   root: true,
   'extends': [
-    '@vue/eslint-config-typescript',
     '@vue/typescript/recommended',
-    'eslint:recommended',
-    'plugin:vue/vue3-recommended',
     'plugin:@typescript-eslint/eslint-recommended',
-    "plugin:@typescript-eslint/recommended"
-  ],
-  overrides: [
-    {
-      files: [
-        'cypress/e2e/**.{cy,spec}.{js,ts,tsx}'
-      ],
-      'extends': [
-        'plugin:cypress/recommended'
-      ]
-    }
+    "plugin:@typescript-eslint/recommended",
+
+    'plugin:vue/vue3-recommended',
+    'eslint:recommended',
+    '@vue/eslint-config-typescript'
   ],
   parserOptions: {
     ecmaVersion: 'latest'
@@ -39,5 +30,9 @@ module.exports = {
 		'@typescript-eslint/semi': [
 			'warn'
 		],
+    "vue/component-name-in-template-casing": ["error", "kebab-case", {
+      "registeredComponentsOnly": false,
+      "ignores": []
+    }]
   }
 };

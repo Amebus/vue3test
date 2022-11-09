@@ -8,26 +8,26 @@ import SupportIcon from './icons/IconSupport.vue';
 </script>
 
 <template>
-  <WelcomeItem>
+  <welcome-item>
     <template #icon>
-      <DocumentationIcon />
+      <documentation-icon />
     </template>
     <template #heading>
       Documentation
     </template>
 
-    Vue’s
+    Vue's
     <a
       href="https://vuejs.org/"
       target="_blank"
       rel="noopener"
     >official documentation</a>
     provides you with all information you need to get started.
-  </WelcomeItem>
+  </welcome-item>
 
-  <WelcomeItem>
+  <welcome-item>
     <template #icon>
-      <ToolingIcon />
+      <tooling-icon />
     </template>
     <template #heading>
       Tooling
@@ -64,11 +64,11 @@ import SupportIcon from './icons/IconSupport.vue';
     <br>
 
     More instructions are available in <code>README.md</code>.
-  </WelcomeItem>
+  </welcome-item>
 
-  <WelcomeItem>
+  <welcome-item>
     <template #icon>
-      <EcosystemIcon />
+      <ecosystem-icon />
     </template>
     <template #heading>
       Ecosystem
@@ -102,11 +102,11 @@ import SupportIcon from './icons/IconSupport.vue';
       rel="noopener"
     >Awesome Vue</a>
     a visit.
-  </WelcomeItem>
+  </welcome-item>
 
-  <WelcomeItem>
+  <welcome-item>
     <template #icon>
-      <CommunityIcon />
+      <community-icon />
     </template>
     <template #heading>
       Community
@@ -136,11 +136,11 @@ import SupportIcon from './icons/IconSupport.vue';
       rel="noopener"
     >@vuejs</a>
     twitter account for latest news in the Vue world.
-  </WelcomeItem>
+  </welcome-item>
 
-  <WelcomeItem>
+  <welcome-item>
     <template #icon>
-      <SupportIcon />
+      <support-icon />
     </template>
     <template #heading>
       Support Vue
@@ -153,5 +153,5 @@ import SupportIcon from './icons/IconSupport.vue';
       target="_blank"
       rel="noopener"
     >becoming a sponsor</a>.
-  </WelcomeItem>
+  </welcome-item>
 </template>

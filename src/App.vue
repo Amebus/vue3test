@@ -11,23 +11,23 @@ import HelloWorld from './components/HelloWorld.vue';
       src="@/assets/logo.svg"
       width="125"
       height="125"
-    />
+    >
 
     <div class="wrapper">
       <hello-world msg="You did it!" />
 
       <nav>
-        <RouterLink to="/">
+        <router-link to="/">
           Home
-        </RouterLink>
-        <RouterLink to="/about">
+        </router-link>
+        <router-link to="/about">
           About
-        </RouterLink>
+        </router-link>
       </nav>
     </div>
   </header>
 
-  <RouterView />
+  <router-view />
 </template>
 
 <style lang="scss" scoped>
